@@ -4,14 +4,22 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import sys
 
 # --- PATH CONFIGURATION FOR STREAMLIT CLOUD ---
-# Get current directory
 current_dir = os.path.dirname(os.path.abspath(__file__))
-
-# Construct paths relative to script location
 MODEL_PATH = os.path.join(current_dir, 'models', 'xgboost.pkl')
 FEATURE_IMG_PATH = os.path.join(current_dir, 'models', 'feature_importance.png')
+
+# --- ERROR HANDLING FOR DEPENDENCIES ---
+try:
+    # Import XGBoost only when needed
+    from xgboost import XGBClassifier
+except ImportError:
+    st.error("""
+    XGBoost not installed! Please add 'xgboost==2.0.3' to requirements.txt.
+    """)
+    st.stop()
 
 # Load the trained model
 try:
@@ -79,7 +87,7 @@ with st.form("prediction_form"):
 
 # --- PREDICTION LOGIC ---
 if submitted:
-    with st.spinner("Analyzing your risk..."):
+    with st.spinner("Analyzing your risk..." if lang == "English" else "Menganalisis risiko anda..."):
         # Create dataframe from inputs
         input_df = pd.DataFrame([inputs])
         
@@ -98,14 +106,9 @@ if submitted:
         ax.barh(['Risk Level'], [risk], color='#ff6b6b' if risk > 50 else '#51cf66')
         ax.set_xlim(0, 100)
         ax.set_xlabel('Risk Percentage' if lang == "English" else "Peratusan Risiko")
-        ax.set_facecolor('#0e1117')  # Match Streamlit dark theme
-        fig.patch.set_facecolor('#0e1117')
-        ax.tick_params(colors='white')
-        ax.spines['bottom'].set_color('white')
-        ax.spines['top'].set_color('white') 
-        ax.spines['right'].set_color('white')
-        ax.spines['left'].set_color('white')
-        ax.xaxis.label.set_color('white')
+        ax.set_facecolor('none')  # Transparent background
+        fig.patch.set_facecolor('none')
+        ax.tick_params(colors=('white' if st.get_option("theme.backgroundColor") == '#0e1117' else 'black'))
         st.pyplot(fig, transparent=True)
         
         # Risk interpretation
@@ -170,7 +173,8 @@ if st.sidebar.checkbox("Show Feature Importance" if lang == "English" else "Tunj
     try:
         st.subheader("Feature Importance" if lang == "English" else "Kepentingan Ciri")
         st.image(FEATURE_IMG_PATH, use_column_width=True)
-        st.caption("How different health factors contribute to diabetes risk")
+        st.caption("How different health factors contribute to diabetes risk" if lang == "English" else 
+                   "Bagaimana faktor kesihatan berbeza menyumbang kepada risiko kencing manis")
     except Exception as e:
         st.warning(f"Feature importance image not found: {str(e)}")
 
